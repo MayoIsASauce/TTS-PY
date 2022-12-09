@@ -22,8 +22,6 @@ async def on_message(message: discord.message.Message):
             if not member.bot:
                 member_ids.append(member.id)
         
-        folderBatch.genFolders(member_ids, os.path.dirname(os.path.abspath(__file__)).split(".")[0]+"\\voices")
-
         await message.channel.send(f'{datetime.now(tz=pytz.UTC)}.UTC | attempted to create folders')
     
 client.run(gnomeReader.fetchToken("resources\\tkn.gnome"))
