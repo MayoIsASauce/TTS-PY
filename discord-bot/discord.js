@@ -12,6 +12,10 @@ async function play(voiceChannel) {
     conn.play('ew.mp3');
 }
 
+client.once("guildMemberSpeaking", (member, r) => {
+    console.log(member.user.username);
+});
+
 client.once('message', (msg) => {
     if (msg.content.startsWith('!')) {
         switch (msg.content) {
