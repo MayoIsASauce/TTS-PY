@@ -1,4 +1,5 @@
 const Discord = require('discord.js');
+const fs = require("fs");
 const client = new Discord.Client();
 let conn = null
 
@@ -31,4 +32,4 @@ client.once('message', (msg) => {
     }
 });
 
-client.login('MTA1MDY3MjgzOTg3Mjc1MzY2Ng.GZFRLz.EFD3QchuID_pGfvZsiwlYQRgF6RsdH_SsLfJQM');
+client.login(fs.readFileSync('resources\\tkn.gnome', 'utf8'));
