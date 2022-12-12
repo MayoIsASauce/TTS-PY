@@ -58,10 +58,9 @@ client.on('message', async (msg) => {
     if (msg.content.startsWith('!')) {
         switch (msg.content) {
             case "!run":
+                // if the channel has active users and we arent recording and we arent connected
                 if (msg.member.voice.channel && !recording && connection == null) {
-                    users = pruneBots(msg.member.voice.channel.members);
-                    connection = await msg.member.voice.channel.join();
-                    
+                    connection = await msg.member.voice.channel.join(); // connect to the vc
                     msg.channel.send("Warmup finished, Toggle recording with: !record");
                 } else {
                     if (connection != null) {
@@ -75,37 +74,43 @@ client.on('message', async (msg) => {
                 return;
             case "!leave":
                 console.log(`received leave request and ${connection != null}`);
+                // if we are connected and not recording
                 if (connection != null && !recording) {
-                    connection.disconnect();
-                    connection = null;
+                    connection.disconnect(); // leave the vc
+                    connection = null; // release the connection
                     await msg.channel.send("left vc");
                 } else {
-                    if (recording) {
-                        msg.channel.send("Stop recording first: !record");
-                    }
+                    if (recording) { msg.channel.send("Stop recording first: !record"); }
                     console.log("unable to leave vc");
                 }
                 return;
             case "!record":
                 if (!recording) // start recording
                 {
+                    // if we are connected
                     if (connection != null) {
-                        main_interval = setInterval(async () => {
-                            let user_keys = iterToArr(users.keys());
-                            let user = users.get(user_keys[Math.floor(Math.random()*user_keys.length)]);
+                        console.log("Beginning record cycle");
+                        main_interval = setInterval(async () => { // create a new async interval to record every 5 minutes
+                            users = pruneBots(connection.channel.members); // get the users in the vc
+                            let user_keys = iterToArr(users.keys()); // create an array of user ids
+                            let user = users.get(user_keys[Math.floor(Math.random()*user_keys.length)]); // pick a random user
 
-                            if (user.user.bot) return;
+                            if (user.user.bot) return; // if they're a bot return NOTE: shouldnt needed but left as a safety
 
                             console.log(`Recording from ${user.user.username}#${user.user.discriminator}`);
+                            // create the audio pipeline
                             audio = connection.receiver.createStream(user, { mode: 'pcm', end: "manual" });
+                            // begin sending audio to destination device
                             audio.pipe(fs.createWriteStream("voices/"+user.user.id+"/"+uuid.v4().split("-").at(-1)+".gAudio"));
                             
                             await sleep(30000);
                             
                             console.log(`Done recording from ${user.user.username}#${user.user.discriminator}\n`);
+                            // end the audio pipeline
                             audio.destroy();
+                            // release resources
                             audio = null;
-                        },330000);
+                        },300000 + 30000); // interval + sleep
 
                         connection.play('resources/mp3s/start.mp3');
                         recording = true;
@@ -117,14 +122,14 @@ client.on('message', async (msg) => {
                 else // end recording
                 {
                     // stop the recording interval
+                    console.log("ending the recording cycle");
+
+                    if (audio != null) { audio.destroy(); } // if the pipeline is open <- i want to delete this file
+                    if (main_interval != null) { clearInterval(main_interval); } // end the recording interval
+
+                    // recording has ended
                     recording = false;
 
-                    if (audio != null) {
-                        audio.destroy();
-                    }
-                    if (main_interval != null) {
-                        clearInterval(main_interval);
-                    }
                     connection.play('resources/mp3s/end.mp3');
                     msg.channel.send("Ended recording: interval closed");
                 }
@@ -132,6 +137,7 @@ client.on('message', async (msg) => {
             case "!debug":
                 console.log(`main_interval = ${main_interval}`);
                 console.log(`connection = ${connection}`);
+                await msg.channel.send("");
                 return;
             default:
                 return;
